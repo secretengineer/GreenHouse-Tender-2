@@ -27,3 +27,9 @@ flutter-app/ios/Pods/
 flutter-app/ios/Flutter/Flutter.framework/
 flutter-app/ios/.generated/
 flutter-app/*.lock
+
+# PlatformIO ignores:
+.pio/
+.pioenvs/
+.clang_complete
+.gcc-flags.json

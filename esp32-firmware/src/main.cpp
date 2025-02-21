@@ -1,9 +1,10 @@
+#include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <DHT.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#include "config.h"  // Credentials
+#include "../include/config.h"
 
 #define DHTPIN 15
 #define DHTTYPE DHT22
@@ -47,6 +48,8 @@ void reconnect() {
     if (client.connect("ESP32Greenhouse", mqtt_user, mqtt_pass)) {
       client.subscribe("greenhouse/control/#");
     } else {
+      Serial.print("MQTT failed, rc=");
+      Serial.println(client.state());
       delay(5000);
     }
   }

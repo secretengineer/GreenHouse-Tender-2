@@ -1,26 +1,26 @@
 # ESP32 Firmware
 
-Firmware for the ESP32 to monitor sensors and control relays in the greenhouse.
+Firmware for the ESP32 to monitor sensors and control relays in the greenhouse, built with PlatformIO.
 
 ## Setup
-1. **Install Arduino IDE:**
-   - Add ESP32 support: `https://dl.espressif.com/dl/package_esp32_index.json`.
-2. **Libraries:**
-   - `PubSubClient` (MQTT)
-   - `DHT sensor library by Adafruit`
-   - `OneWire`
-   - `DallasTemperature`
-3. **Wiring:**
+1. **Install PlatformIO:**
+   - Install VS Code and the PlatformIO extension.
+2. **Open Project:**
+   - Open this folder in VS Code.
+3. **Dependencies:**
+   - Defined in `platformio.ini`; PlatformIO will install them automatically.
+4. **Wiring:**
    - DHT22: GPIO 15
    - Soil Moisture: GPIO 34
    - pH Sensor: GPIO 35
    - DS18B20: GPIO 4
    - Relays: GPIO 13 (Fan), 12 (Vent), 14 (Heater)
-4. **Config:**
-   - Edit `src/config.h` with your WiFi and HiveMQ credentials.
-5. **Upload:**
-   - Open `src/greenhouse.ino` in Arduino IDE, select ESP32 Dev Module, and upload.
+5. **Config:**
+   - Edit `include/config.h` with your WiFi and HiveMQ credentials.
+6. **Build & Upload:**
+   - Use PlatformIO toolbar: Build (✓), Upload (→).
+   - Adjust `upload_port` in `platformio.ini` if needed (e.g., `/dev/ttyUSB0` or `COM3`).
 
 ## Notes
 - Calibrate soil moisture and pH readings with known values.
-- Ensure relays are active-low (HIGH = off).
+- Relays are active-low (HIGH = off).

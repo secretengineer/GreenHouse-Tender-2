@@ -1,6 +1,7 @@
+#include <Arduino.h>
 #include "esp_camera.h"
 #include <WiFi.h>
-#include "config.h"
+#include "../include/config.h"
 
 #define CAMERA_MODEL_AI_THINKER
 
