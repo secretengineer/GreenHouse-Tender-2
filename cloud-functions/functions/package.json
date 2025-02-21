@@ -1,0 +1,17 @@
+{
+    "name": "functions",
+    "description": "Cloud Functions for Greenhouse Monitoring",
+    "scripts": {
+      "serve": "firebase emulators:start --only functions",
+      "deploy": "firebase deploy --only functions"
+    },
+    "engines": {
+      "node": "16"
+    },
+    "dependencies": {
+      "firebase-admin": "^11.0.0",
+      "firebase-functions": "^4.0.0",
+      "mqtt": "^4.3.7"
+    },
+    "private": true
+  }
