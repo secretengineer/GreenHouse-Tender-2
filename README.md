@@ -1,90 +1,82 @@
-# GreenHouse Tender 2
- A new revision of GreenHouse Tender 1
 
-The objective of this project is to create a new version of GreenHouse Tender 1 with more detailed requirements, a mobile app component and a video streaming function to enhance the user experience.
+# Greenhouse Monitoring
 
+A cloud-based system to monitor and control a greenhouse environment using an ESP32 microcontroller, ESP32-CAM for video, Firebase for data storage and notifications, and a Flutter mobile app for a modern user interface.
 
-### 1. Define Requirements
-You’ve already outlined the core features:
-- **Sensors:**
-  - Ambient temperature and humidity
-  - Soil humidity
-  - Soil pH
-  - Heat/thermostat settings
-  - Fan and vent status (on/off or open/closed)
-- **Video Feed:**
-  - Real-time camera streaming
-- **Mobile App:**
-  - Display sensor data and video
-  - Allow user interaction (e.g., adjust thermostat, toggle fan/vent)
+## Overview
 
-Additional considerations:
-- Do you want real-time updates or periodic polling?
-- Should the app send notifications (e.g., if temperature exceeds a threshold)?
-- Will this be local (Wi-Fi) or cloud-based?
+This project creates a comprehensive greenhouse monitoring solution that tracks key environmental parameters and allows remote control via a mobile app. It features real-time sensor data (temperature, humidity, soil moisture, pH), relay-controlled devices (fan, vent, heater), and live video streaming, all presented in an aesthetic UI with graphs and customizable notifications.
 
-### 2. Hardware Selection
-Here’s a suggested hardware setup:
-- **Microcontroller:** Raspberry Pi (good for video and processing) or Arduino (simpler for sensors).
-- **Sensors:**
-  - **Ambient Temp/Humidity:** DHT22 or BME280 (I2C-based, more accurate).
-  - **Soil Humidity:** Capacitive soil moisture sensor (less corrosion than resistive ones).
-  - **Soil pH:** Analog pH sensor with a module (e.g., SEN0161).
-  - **Thermostat Control:** Relay module to control heaters + DS18B20 for temp feedback.
-  - **Fan/Vent Status:** Relays or limit switches to detect/control state.
-- **Camera:** USB webcam or Raspberry Pi Camera Module.
-- **Power Supply:** Ensure stable power for all components (e.g., 5V/12V depending on setup).
+### Features
+- **Sensors:** Ambient temperature/humidity (DHT22), soil moisture (capacitive sensor), soil pH (SEN0161), thermostat temperature (DS18B20).
+- **Controls:** Fan, vent, and heater via relays.
+- **Video:** Live feed from ESP32-CAM.
+- **Mobile App:** Flutter-based UI with real-time data, time-series graphs, modern icons/fonts (Poppins, FontAwesome), and user-defined high/low threshold notifications.
+- **Cloud:** HiveMQ MQTT for data transmission, Firebase Firestore for storage, and Firebase Cloud Messaging for alerts.
 
-### 3. System Architecture
-- **Local Setup:**
-  - Microcontroller collects sensor data and controls devices.
-  - Camera streams video.
-  - Data is sent to a local server (e.g., on Raspberry Pi) or directly to the app via Wi-Fi.
-- **Cloud Setup (Optional):**
-  - Use a service like AWS IoT, Google Cloud IoT, or Blynk to store data and relay it to the app.
-  - Video streaming via RTSP or a service like AWS Kinesis Video Streams.
+### Architecture
+- **ESP32:** Collects sensor data, controls relays, and publishes to MQTT.
+- **ESP32-CAM:** Streams video over HTTP.
+- **Cloud:** HiveMQ MQTT broker relays data; Firebase Cloud Functions sync MQTT to Firestore and trigger notifications.
+- **Flutter App:** Pulls data from Firestore, displays graphs, and sends control commands.
 
-### 4. Software Development
-#### Backend (Microcontroller)
-- **Language:** Python (Raspberry Pi) or C++ (Arduino).
-- **Libraries:**
-  - For DHT22/BME280: Adafruit libraries.
-  - For soil sensors: Analog-to-digital conversion (ADC) if needed.
-  - For relays: GPIO control.
-- **Video Streaming:** Use GStreamer or OpenCV on Raspberry Pi for RTSP streaming.
-- **Data Protocol:** MQTT or HTTP to send sensor data to the app/server.
+## Project Structure
 
-#### Mobile App
-- **Framework:** Flutter (cross-platform) or React Native; native options like Swift (iOS) or Kotlin (Android) work too.
-- **Features:**
-  - **UI:** Dashboard with gauges/charts for sensor data (e.g., using Syncfusion or Fl_chart in Flutter).
-  - **Video:** Embed RTSP stream using a library like VLC or a WebView.
-  - **Controls:** Buttons/sliders for thermostat, fan, and vent.
-- **Connectivity:** WebSocket or MQTT for real-time updates; REST API if polling.
+```
+greenhouse-monitoring/
+├── esp32-firmware/         # ESP32 sensor and control firmware (C++)
+├── esp32-cam-firmware/     # ESP32-CAM video streaming firmware (C++)
+├── cloud-functions/        # Firebase Cloud Functions (Node.js)
+├── flutter-app/            # Flutter mobile app (Dart)
+├── docs/                   # Documentation (wiring, architecture)
+├── .gitignore              # Git ignore rules
+├── README.md               # This file
+└── LICENSE                 # MIT License
+```
 
-### 5. Step-by-Step Plan
-1. **Prototype Hardware:**
-   - Connect sensors to the microcontroller and test readings.
-   - Wire relays for fan/vent/thermostat control.
-   - Set up the camera and test streaming.
-2. **Backend Code:**
-   - Write a script to read sensors and publish data (e.g., via MQTT).
-   - Add control logic for relays based on app commands.
-3. **Mobile App:**
-   - Design a simple UI with placeholders for data and video.
-   - Connect to the backend (MQTT/HTTP) and display sensor values.
-   - Integrate video feed and test controls.
-4. **Testing:**
-   - Simulate greenhouse conditions (e.g., heat lamp, water soil) and verify data accuracy.
-   - Ensure app updates in real-time and controls work.
-5. **Deployment:**
-   - Secure the system (e.g., password-protect streams, encrypt data if cloud-based).
-   - Mount hardware in the greenhouse and finalize the app.
+## Prerequisites
 
-### 6. Example Tools & Costs
-- **Hardware:** ~$50–$100 (Raspberry Pi ~$35, sensors ~$5–$15 each, camera ~$20).
-- **Software:** Free/open-source (Python, Flutter, MQTT brokers like Mosquitto).
-- **Cloud (Optional):** ~$5–$20/month depending on usage.
+- **Hardware:** ESP32 DevKit, ESP32-CAM, DHT22, capacitive soil moisture sensor, pH sensor (SEN0161), DS18B20, relays, Wi-Fi.
+- **Software:** Arduino IDE (for ESP32), Node.js (for Firebase), Flutter SDK, Git.
+- **Services:** HiveMQ Cloud account, Firebase project.
 
+## Setup Instructions
 
+1. **Clone the Repo:**
+   ```bash
+   git clone https://github.com/secretengineer/GreenHouse-Tender-2.git
+   cd Greenhouse-Tender-2
+   ```
+2. **ESP32 Firmware:** See `esp32-firmware/README.md` for wiring and upload instructions.
+3. **ESP32-CAM Firmware:** See `esp32-cam-firmware/README.md` for camera setup.
+4. **Cloud Functions:** See `cloud-functions/README.md` for Firebase deployment.
+5. **Flutter App:** See `flutter-app/README.md` for app setup and run commands.
+6. **Documentation:** Check `docs/` for wiring diagrams and architecture details.
+
+## Status
+
+- **Current Stage:** Planning and initial code snippets completed (as of February 20, 2025).
+- **Next Steps:** Implement and test ESP32 firmware, deploy Firebase functions, build Flutter UI.
+
+## Contributing
+
+Feel free to fork, submit issues, or open pull requests. See individual component READMEs for specific contribution guidelines.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+Created by Pat Ryan - reach out via GitHub Issues for questions or feedback.
+```
+
+---
+
+### Formatting Details
+- **Headings:** `#` for main title, `##` for sections, `###` for subsections.
+- **Lists:** `-` for unordered lists, `1.` for ordered steps.
+- **Code Blocks:** Triple backticks (```) with language specifiers (e.g., `bash`) for syntax highlighting.
+- **Links:** `[text](url)` format for the LICENSE link.
+- **Consistency:** Uniform spacing and indentation for readability.
 
