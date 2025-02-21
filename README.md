@@ -43,7 +43,7 @@ greenhouse-monitoring/
 
 1. **Clone the Repo:**
    ```bash
-   git clone https://github.com/secretengineer/Greenhouse-Tender2.git
+   git clone https://github.com/secretengineer/Greenhouse-Tender-2.git
    cd greenhouse-monitoring
    ```
 2. **ESP32 Firmware:**
