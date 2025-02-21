@@ -6,8 +6,8 @@
 # ESP32
 esp32-firmware/build/
 esp32-cam-firmware/build/
-esp32-firmware/src/config.h
-esp32-cam-firmware/src/config.h
+esp32-firmware/include/config.h
+esp32-cam-firmware/include/config.h
 
 # Firebase
 cloud-functions/functions/node_modules/
