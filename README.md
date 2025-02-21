@@ -1,4 +1,3 @@
-
 # Greenhouse Monitoring
 
 A cloud-based system to monitor and control a greenhouse environment using an ESP32 microcontroller, ESP32-CAM for video, Firebase for data storage and notifications, and a Flutter mobile app for a modern user interface.
@@ -24,8 +23,8 @@ This project creates a comprehensive greenhouse monitoring solution that tracks 
 
 ```
 greenhouse-monitoring/
-├── esp32-firmware/         # ESP32 sensor and control firmware (C++)
-├── esp32-cam-firmware/     # ESP32-CAM video streaming firmware (C++)
+├── esp32-firmware/         # ESP32 sensor and control firmware (C++, PlatformIO)
+├── esp32-cam-firmware/     # ESP32-CAM video streaming firmware (C++, PlatformIO)
 ├── cloud-functions/        # Firebase Cloud Functions (Node.js)
 ├── flutter-app/            # Flutter mobile app (Dart)
 ├── docs/                   # Documentation (wiring, architecture)
@@ -36,19 +35,25 @@ greenhouse-monitoring/
 
 ## Prerequisites
 
-- **Hardware:** ESP32 DevKit, ESP32-CAM, DHT22, capacitive soil moisture sensor, pH sensor (SEN0161), DS18B20, relays, Wi-Fi.
-- **Software:** Arduino IDE (for ESP32), Node.js (for Firebase), Flutter SDK, Git.
+- **Hardware:** ESP32 DevKit, ESP32-CAM (e.g., AI-Thinker), DHT22, capacitive soil moisture sensor, pH sensor (SEN0161), DS18B20, relays, Wi-Fi.
+- **Software:** VS Code with PlatformIO extension (for ESP32 firmware), Node.js (for Firebase), Flutter SDK, Git.
 - **Services:** HiveMQ Cloud account, Firebase project.
 
 ## Setup Instructions
 
 1. **Clone the Repo:**
    ```bash
-   git clone https://github.com/secretengineer/GreenHouse-Tender-2.git
-   cd Greenhouse-Tender-2
+   git clone https://github.com/secretengineer/Greenhouse-Tender2.git
+   cd greenhouse-monitoring
    ```
-2. **ESP32 Firmware:** See `esp32-firmware/README.md` for wiring and upload instructions.
-3. **ESP32-CAM Firmware:** See `esp32-cam-firmware/README.md` for camera setup.
+2. **ESP32 Firmware:**
+   - Open `esp32-firmware/` in VS Code with PlatformIO.
+   - Configure `include/config.h` with WiFi and MQTT credentials.
+   - See `esp32-firmware/README.md` for wiring and upload instructions.
+3. **ESP32-CAM Firmware:**
+   - Open `esp32-cam-firmware/` in VS Code with PlatformIO.
+   - Configure `include/config.h` with WiFi credentials.
+   - See `esp32-cam-firmware/README.md` for wiring and upload instructions.
 4. **Cloud Functions:** See `cloud-functions/README.md` for Firebase deployment.
 5. **Flutter App:** See `flutter-app/README.md` for app setup and run commands.
 6. **Documentation:** Check `docs/` for wiring diagrams and architecture details.
@@ -71,12 +76,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Created by Pat Ryan - reach out via GitHub Issues for questions or feedback.
 ```
 
----
-
-### Formatting Details
-- **Headings:** `#` for main title, `##` for sections, `###` for subsections.
-- **Lists:** `-` for unordered lists, `1.` for ordered steps.
-- **Code Blocks:** Triple backticks (```) with language specifiers (e.g., `bash`) for syntax highlighting.
-- **Links:** `[text](url)` format for the LICENSE link.
-- **Consistency:** Uniform spacing and indentation for readability.
 
