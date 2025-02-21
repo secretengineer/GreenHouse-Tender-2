@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/.pio/libdeps/**",
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/cores/esp32",
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include"
+            ],
+            "defines": [
+                "PLATFORMIO=60111",
+                "ARDUINO_ESP32_DEV",
+                "ESP32",
+                "ESP_PLATFORM",
+                "F_CPU=240000000L"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
