@@ -1,0 +1,29 @@
+# General
+*.log
+*.tmp
+.DS_Store
+
+# ESP32
+esp32-firmware/build/
+esp32-cam-firmware/build/
+esp32-firmware/src/config.h
+esp32-cam-firmware/src/config.h
+
+# Firebase
+cloud-functions/functions/node_modules/
+cloud-functions/functions/.firebase/
+cloud-functions/functions/*.log
+
+# Flutter
+flutter-app/.dart_tool/
+flutter-app/.idea/
+flutter-app/build/
+flutter-app/.packages
+flutter-app/.flutter-plugins
+flutter-app/ios/Runner.xcworkspace/xcshareddata/
+flutter-app/android/.gradle/
+flutter-app/android/app/build/
+flutter-app/ios/Pods/
+flutter-app/ios/Flutter/Flutter.framework/
+flutter-app/ios/.generated/
+flutter-app/*.lock
