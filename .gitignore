@@ -9,6 +9,14 @@ esp32-cam-firmware/build/         # Compiled camera firmware files
 esp32-firmware/include/config.h    # Contains sensitive WiFi and MQTT credentials
 esp32-cam-firmware/include/config.h # Contains sensitive configuration data
 
+# Configuration files containing sensitive data
+esp32-cam-firmware/include/config.h
+esp32-firmware/include/config.h
+
+# But allow template files
+!esp32-cam-firmware/include/config.h.template
+!esp32-firmware/include/config.h.template
+
 # Firebase - Dependencies and local configuration
 cloud-functions/functions/node_modules/    # NPM dependencies
 cloud-functions/functions/.firebase/       # Local Firebase configuration
