@@ -14,6 +14,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>    // MQTT client
+#include <Adafruit_Sensor.h> // Required by DHT library
 #include <DHT.h>            // DHT sensor
 #include <OneWire.h>        // Required for DS18B20
 #include <DallasTemperature.h>  // DS18B20 sensor
@@ -21,6 +22,10 @@
 #include <Adafruit_GFX.h>   // Graphics library
 #include <Adafruit_SSD1306.h> // OLED display
 #include "../include/config.h"
+
+// Add after includes
+void callback(char* topic, byte* payload, unsigned int length);
+void reconnect();
 
 // Pin Definitions
 #define DHTPIN 25           // DHT22 data pin
@@ -113,19 +118,20 @@ void reconnect() {
  * @param length - Message length
  */
 void callback(char* topic, byte* payload, unsigned int length) {
-    String message = String((char*)payload).substring(0, length);
-    String device = String(topic).substring(17);  // Extract device name
-    
-    // Determine which device to control
-    int pin = -1;
-    if (device == "fan") pin = FAN_PIN;
-    else if (device == "vent") pin = VENT_PIN;
-    else if (device == "heater") pin = HEATER_PIN;
-    
-    // Update device state and publish status
-    if (pin != -1) {
-        digitalWrite(pin, message == "ON" ? LOW : HIGH);
-        client.publish(("greenhouse/status/" + device).c_str(), message.c_str());
+    // Create a null-terminated string from the payload
+    char message[length + 1];
+    memcpy(message, payload, length);
+    message[length] = '\0';
+
+    // Handle incoming messages
+    if (strcmp(topic, "greenhouse/control/fan") == 0) {
+        digitalWrite(FAN_PIN, message[0] == '1' ? LOW : HIGH);
+    } 
+    else if (strcmp(topic, "greenhouse/control/vent") == 0) {
+        digitalWrite(VENT_PIN, message[0] == '1' ? LOW : HIGH);
+    }
+    else if (strcmp(topic, "greenhouse/control/heater") == 0) {
+        digitalWrite(HEATER_PIN, message[0] == '1' ? LOW : HIGH);
     }
 }
 
