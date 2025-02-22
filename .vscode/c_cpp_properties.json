@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/.pio/libdeps/**",
                 "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/cores/esp32",
-                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include"
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include",
+                "C:/Users/ptrck/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include"
             ],
             "defines": [
                 "PLATFORMIO=60111",

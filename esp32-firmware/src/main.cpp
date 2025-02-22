@@ -1,38 +1,49 @@
 /**
- * ESP32 Greenhouse Controller
+ * Greenhouse Environment Control System
  * 
- * This firmware manages a greenhouse environment using various sensors and actuators:
+ * This firmware manages a greenhouse environment using:
  * - DHT22 for ambient temperature and humidity
- * - Soil moisture sensor
- * - pH sensor
- * - Dallas DS18B20 temperature sensor
+ * - Soil moisture sensor (analog)
+ * - pH sensor (analog)
+ * - DS18B20 temperature probe
+ * - OLED display for real-time readings
  * - Relay-controlled fan, vent, and heater
  */
 
+// Required libraries
 #include <Arduino.h>
 #include <WiFi.h>
-#include <PubSubClient.h>
-#include <DHT.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
+#include <PubSubClient.h>    // MQTT client
+#include <DHT.h>            // DHT sensor
+#include <OneWire.h>        // Required for DS18B20
+#include <DallasTemperature.h>  // DS18B20 sensor
+#include <Wire.h>           // I2C communication
+#include <Adafruit_GFX.h>   // Graphics library
+#include <Adafruit_SSD1306.h> // OLED display
 #include "../include/config.h"
 
 // Pin Definitions
-#define DHTPIN 15          // DHT22 data pin
-#define DHTTYPE DHT22      // DHT sensor type
-#define SOIL_PIN 34        // Soil moisture sensor analog pin
-#define PH_PIN 35         // pH sensor analog pin
-#define TEMP_PIN 4         // DS18B20 temperature sensor data pin
-#define FAN_PIN 13        // Relay pin for fan control
-#define VENT_PIN 12       // Relay pin for vent control
-#define HEATER_PIN 14     // Relay pin for heater control
+#define DHTPIN 25           // DHT22 data pin
+#define DHTTYPE DHT22       // DHT22 sensor type
+#define SOIL_PIN 34         // Soil moisture sensor (ADC1_CH6)
+#define PH_PIN 35          // pH sensor (ADC1_CH7)
+#define TEMP_PIN 26        // DS18B20 data pin
+#define FAN_PIN 13         // Relay control pins (active LOW)
+#define VENT_PIN 12
+#define HEATER_PIN 27
 
-// Initialize network and sensor objects
+// OLED Display Configuration
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_ADDRESS 0x3C   // Default I2C address for SSD1306
+
+// Initialize communication clients and sensors
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(TEMP_PIN);
 DallasTemperature tempSensor(&oneWire);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 /**
  * Initial setup function
@@ -41,7 +52,7 @@ DallasTemperature tempSensor(&oneWire);
 void setup() {
     Serial.begin(115200);
     
-    // Configure relay pins (relays are active LOW)
+    // Initialize relay control pins (HIGH = OFF, LOW = ON)
     pinMode(FAN_PIN, OUTPUT); digitalWrite(FAN_PIN, HIGH);
     pinMode(VENT_PIN, OUTPUT); digitalWrite(VENT_PIN, HIGH);
     pinMode(HEATER_PIN, OUTPUT); digitalWrite(HEATER_PIN, HIGH);
@@ -50,50 +61,60 @@ void setup() {
     dht.begin();
     tempSensor.begin();
     
-    // Connect to WiFi
-    Serial.print("Connecting to WiFi");
+    // Initialize OLED display
+    if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
+        Serial.println(F("OLED initialization failed"));
+        for(;;);  // Halt if OLED fails
+    }
+    
+    // Setup initial display
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("Greenhouse-Tender2");
+    display.display();
+    
+    // Connect to WiFi network
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
-    Serial.println("\nWiFi connected");
+    Serial.println("WiFi connected");
 
-    // Configure MQTT
+    // Configure MQTT client
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
     reconnect();
 }
 
 /**
- * MQTT reconnection function
+ * MQTT Reconnection Handler
  * Attempts to reconnect to MQTT broker if connection is lost
  */
 void reconnect() {
     while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        if (client.connect("ESP32Greenhouse", mqtt_user, mqtt_pass)) {
-            Serial.println("connected");
+        if (client.connect("HeltecGreenhouse", mqtt_user, mqtt_pass)) {
             client.subscribe("greenhouse/control/#");
         } else {
-            Serial.print("failed, rc=");
-            Serial.println(client.state());
+            Serial.printf("MQTT failed, rc=%d\n", client.state());
             delay(5000);
         }
     }
 }
 
 /**
- * MQTT message callback
- * Handles incoming control messages for devices
+ * MQTT Message Handler
+ * Processes incoming control messages for devices
  * 
- * @param topic The MQTT topic of the incoming message
- * @param payload The message content
- * @param length Length of the message
+ * @param topic - MQTT topic (greenhouse/control/{device})
+ * @param payload - Message content (ON/OFF)
+ * @param length - Message length
  */
 void callback(char* topic, byte* payload, unsigned int length) {
     String message = String((char*)payload).substring(0, length);
-    String device = String(topic).substring(17); // Extract device name after "greenhouse/control/"
+    String device = String(topic).substring(17);  // Extract device name
     
     // Determine which device to control
     int pin = -1;
@@ -109,42 +130,51 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 /**
- * Main program loop
- * Reads sensors and publishes data every 5 seconds
+ * Main Program Loop
+ * Reads sensors, publishes data, and updates display every 5 seconds
  */
 void loop() {
     // Ensure MQTT connection
     if (!client.connected()) reconnect();
     client.loop();
 
-    // Read sensor values
+    // Read all sensor values
     float temp = dht.readTemperature();
     float humidity = dht.readHumidity();
     int soilRaw = analogRead(SOIL_PIN);
     int phRaw = analogRead(PH_PIN);
     tempSensor.requestTemperatures();
     float thermoTemp = tempSensor.getTempCByIndex(0);
+    
+    // Convert raw readings to meaningful values
+    float soilMoisture = map(soilRaw, 4095, 0, 0, 100);  // 0-100%
+    float ph = map(phRaw, 0, 4095, 0, 14);              // pH 0-14
 
     // Publish sensor readings to MQTT
     if (!isnan(temp)) client.publish("greenhouse/ambient/temp", String(temp).c_str());
     if (!isnan(humidity)) client.publish("greenhouse/ambient/humidity", String(humidity).c_str());
-    
-    // Convert and publish soil moisture (mapped from 4095-0 to 0-100%)
-    float soilMoisture = map(soilRaw, 4095, 0, 0, 100);
     client.publish("greenhouse/soil/moisture", String(soilMoisture).c_str());
-    
-    // Convert and publish pH (mapped from 0-4095 to 0-14 pH)
-    float ph = map(phRaw, 0, 4095, 0, 14);
     client.publish("greenhouse/soil/ph", String(ph).c_str());
-    
-    // Publish thermometer temperature if valid
     if (thermoTemp != -127) client.publish("greenhouse/thermo/temp", String(thermoTemp).c_str());
-
-    // Publish current device states
+    
+    // Publish device states
     client.publish("greenhouse/status/fan", digitalRead(FAN_PIN) == LOW ? "ON" : "OFF");
     client.publish("greenhouse/status/vent", digitalRead(VENT_PIN) == LOW ? "ON" : "OFF");
     client.publish("greenhouse/status/heater", digitalRead(HEATER_PIN) == LOW ? "ON" : "OFF");
 
+    // Update OLED display with current readings
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Temp: "); display.print(temp); display.println(" C");
+    display.print("Hum: "); display.print(humidity); display.println(" %");
+    display.print("Soil: "); display.print(soilMoisture); display.println(" %");
+    display.print("pH: "); display.println(ph);
+    display.print("Thermo: "); display.print(thermoTemp); display.println(" C");
+    display.print("Fan: "); display.println(digitalRead(FAN_PIN) == LOW ? "ON" : "OFF");
+    display.print("Vent: "); display.println(digitalRead(VENT_PIN) == LOW ? "ON" : "OFF");
+    display.print("Heat: "); display.println(digitalRead(HEATER_PIN) == LOW ? "ON" : "OFF");
+    display.display();
+
     // Wait before next update
-    delay(5000);
+    delay(5000);  // 5 second interval
 }
