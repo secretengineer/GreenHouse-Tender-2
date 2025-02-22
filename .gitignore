@@ -41,3 +41,7 @@ flutter-app/*.lock                        # Package dependency lock files
 .pioenvs/           # PlatformIO virtual environments
 .clang_complete     # Clang completion database
 .gcc-flags.json     # GCC compilation flags
+docs/WIFI_Schematic_diagram_V1.1.ai
+docs/WIFI_Schematic_diagram_V1.eps
+docs/WIFI_Schematic_diagram_V1.1.pdf
+.gitignore
