@@ -18,7 +18,7 @@ This project creates a comprehensive greenhouse monitoring solution that tracks 
 - **ESP32-CAM:** Streams video over HTTP.
 - **Cloud:** HiveMQ MQTT broker relays data; Firebase Cloud Functions sync MQTT to Firestore and trigger notifications.
 - **Flutter App:** Pulls data from Firestore, displays graphs, and sends control commands.
-- **User option to manage system locally, in the event of network failure scenario.
+- **Offline Mode:** User option to manage system locally, in the event of network failure scenario.
 
 ## Project Structure
 
