@@ -41,6 +41,8 @@ void reconnect();
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_ADDRESS 0x3C   // Default I2C address for SSD1306
+#define SDA_OLED 4         // Heltec OLED SDA pin
+#define SCL_OLED 15        // Heltec OLED SCL pin
 
 // Initialize communication clients and sensors
 WiFiClient espClient;
@@ -48,7 +50,7 @@ PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(TEMP_PIN);
 DallasTemperature tempSensor(&oneWire);
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 16);  // Use GPIO 16 as reset pin
 
 /**
  * Initial setup function
@@ -56,6 +58,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
  */
 void setup() {
     Serial.begin(115200);
+    
+    // Heltec WiFi Kit 32 I2C configuration
+    Wire.begin(SDA_OLED, SCL_OLED);  // SDA = GPIO 4, SCL = GPIO 15 for Heltec board
     
     // Initialize relay control pins (HIGH = OFF, LOW = ON)
     pinMode(FAN_PIN, OUTPUT); digitalWrite(FAN_PIN, HIGH);
@@ -77,7 +82,15 @@ void setup() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
-    display.println("Greenhouse-Tender2");
+    display.println("   GREENHOUSE TENDER");
+    display.println("");
+    display.println("   Version 1.0.0");
+    display.println("");
+    display.println("   (C) 2025");
+    display.println("");
+    display.println("   Pat Ryan Design");
+   
+    
     display.display();
     
     // Connect to WiFi network
