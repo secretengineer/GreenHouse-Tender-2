@@ -86,9 +86,9 @@ void setup() {
     display.println("");
     display.println("   Version 1.0.0");
     display.println("");
-    display.println("   (C) 2025");
+    display.println("     (C) 2025");
     display.println("");
-    display.println("   Pat Ryan Design");
+    display.println("   Pat Ryan Things");
    
     
     display.display();
