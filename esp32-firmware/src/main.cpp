@@ -84,11 +84,11 @@ void setup() {
     display.setCursor(0, 0);
     display.println("   GREENHOUSE TENDER");
     display.println("");
-    display.println("   Version 1.0.0");
+    display.println("     Version 1.0.0");
     display.println("");
-    display.println("     (C) 2025");
+    display.println("       (C) 2025");
     display.println("");
-    display.println("   Pat Ryan Things");
+    display.println("    Pat Ryan Things");
    
     
     display.display();
