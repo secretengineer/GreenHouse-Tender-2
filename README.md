@@ -1,6 +1,6 @@
 # Greenhouse Monitoring
 
-A cloud-based system to monitor and control a greenhouse environment using an ESP32 microcontroller, ESP32-CAM for video, Firebase for data storage and notifications, and a Flutter mobile app for a modern user interface.
+A cloud-based (or local, non-cloud, non-internet option for grid-down scenarios) system to monitor and control a greenhouse environment using an ESP32 microcontroller, ESP32-CAM for video, Firebase for data storage and notifications, and a Flutter mobile app for a modern user interface.
 
 ## Overview
 
@@ -18,6 +18,7 @@ This project creates a comprehensive greenhouse monitoring solution that tracks 
 - **ESP32-CAM:** Streams video over HTTP.
 - **Cloud:** HiveMQ MQTT broker relays data; Firebase Cloud Functions sync MQTT to Firestore and trigger notifications.
 - **Flutter App:** Pulls data from Firestore, displays graphs, and sends control commands.
+- **User option to manage system locally, in the event of network failure scenario.
 
 ## Project Structure
 
