@@ -15,12 +15,12 @@
 #include <WiFi.h>
 #include <PubSubClient.h>    // MQTT client
 #include <Adafruit_Sensor.h> // Required by DHT library
-#include <DHT.h>            // DHT sensor
-#include <OneWire.h>        // Required for DS18B20
+#include <DHT.h>             // DHT sensor
+#include <OneWire.h>         // Required for DS18B20
 #include <DallasTemperature.h>  // DS18B20 sensor
 #include <Wire.h>           // I2C communication
 #include <Adafruit_GFX.h>   // Graphics library
-#include <Adafruit_SSD1306.h> // OLED display
+#include <Adafruit_SSD1306.h>  // OLED display
 #include <esp_task_wdt.h>   // Watchdog timer
 #include "../include/config.h"
 
