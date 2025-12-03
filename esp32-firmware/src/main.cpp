@@ -127,7 +127,7 @@ void reconnect() {
  * Processes incoming control messages for devices
  * 
  * @param topic - MQTT topic (greenhouse/control/{device})
- * @param payload - Message content (ON/OFF)
+ * @param payload - Message content (ON/OFF or 1/0)
  * @param length - Message length
  */
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -135,16 +135,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
     char message[length + 1];
     memcpy(message, payload, length);
     message[length] = '\0';
+    
+    // Determine if the command is to turn ON (supports "ON", "1", "true")
+    bool turnOn = (strcmp(message, "ON") == 0) || 
+                  (strcmp(message, "1") == 0) || 
+                  (strcmp(message, "true") == 0);
 
-    // Handle incoming messages
+    // Handle incoming messages and control devices
     if (strcmp(topic, "greenhouse/control/fan") == 0) {
-        digitalWrite(FAN_PIN, message[0] == '1' ? LOW : HIGH);
+        digitalWrite(FAN_PIN, turnOn ? LOW : HIGH);
+        Serial.printf("Fan turned %s\n", turnOn ? "ON" : "OFF");
     } 
     else if (strcmp(topic, "greenhouse/control/vent") == 0) {
-        digitalWrite(VENT_PIN, message[0] == '1' ? LOW : HIGH);
+        digitalWrite(VENT_PIN, turnOn ? LOW : HIGH);
+        Serial.printf("Vent turned %s\n", turnOn ? "ON" : "OFF");
     }
     else if (strcmp(topic, "greenhouse/control/heater") == 0) {
-        digitalWrite(HEATER_PIN, message[0] == '1' ? LOW : HIGH);
+        digitalWrite(HEATER_PIN, turnOn ? LOW : HIGH);
+        Serial.printf("Heater turned %s\n", turnOn ? "ON" : "OFF");
     }
 }
 

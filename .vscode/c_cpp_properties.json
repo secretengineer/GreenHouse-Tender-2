@@ -5,20 +5,24 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/.pio/libdeps/**",
-                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/cores/esp32",
-                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include",
-                "C:/Users/ptrck/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include"
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/**",
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/cores/esp32/**",
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/**",
+                "C:/Users/${env:USERNAME}/.platformio/packages/framework-arduinoespressif32/libraries/**",
+                "C:/Users/${env:USERNAME}/.platformio/packages/toolchain-xtensa-esp32/xtensa-esp32-elf/include/**"
             ],
             "defines": [
                 "PLATFORMIO=60111",
                 "ARDUINO_ESP32_DEV",
                 "ESP32",
                 "ESP_PLATFORM",
-                "F_CPU=240000000L"
+                "F_CPU=240000000L",
+                "ARDUINO_ARCH_ESP32"
             ],
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "C:/Users/${env:USERNAME}/.platformio/packages/toolchain-xtensa-esp32/bin/xtensa-esp32-elf-gcc.exe"
         }
     ],
     "version": 4
