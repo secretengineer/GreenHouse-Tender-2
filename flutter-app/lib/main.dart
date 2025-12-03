@@ -20,10 +20,22 @@ class GreenhouseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData(
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        primaryColor: Colors.green[700],
-        scaffoldBackgroundColor: Colors.grey[100],
+      title: 'Greenhouse Tender',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Color(0xFF121212),
+        primaryColor: Colors.greenAccent,
+        colorScheme: ColorScheme.dark(
+          primary: Colors.greenAccent,
+          secondary: Colors.tealAccent,
+          surface: Color(0xFF1E1E1E),
+        ),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+        cardTheme: CardTheme(
+          color: Color(0xFF1E1E1E),
+          elevation: 8,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
       ),
       home: Dashboard(),
     );
@@ -38,103 +50,185 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   late VlcPlayerController _videoController;
   final db = FirebaseFirestore.instance;
-  Map<String, double> thresholds = {};
+  Map<String, dynamic> thresholds = {};
 
   @override
   void initState() {
     super.initState();
-    _videoController = VlcPlayerController.network('http://<esp32-cam-ip>/stream', autoPlay: true);
-    FirebaseMessaging.instance.subscribeToTopic('greenhouse_alerts');
-    FirebaseMessaging.onMessage.listen((msg) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg.notification?.body ?? '')));
-    });
+    // Replace with your actual ESP32-CAM IP or DDNS URL
+    _videoController = VlcPlayerController.network(
+      'http://192.168.1.100/stream', 
+      autoPlay: true,
+      options: VlcPlayerOptions(),
+    );
+    
+    setupMessaging();
     loadThresholds();
   }
 
-  void loadThresholds() async {
-    final doc = await db.collection('settings').doc('thresholds').get();
-    setState(() => thresholds = Map<String, double>.from(doc.data() ?? {}));
+  void setupMessaging() async {
+    await FirebaseMessaging.instance.requestPermission();
+    await FirebaseMessaging.instance.subscribeToTopic('greenhouse_alerts');
+    FirebaseMessaging.onMessage.listen((msg) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg.notification?.body ?? 'Alert received'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+      }
+    });
+  }
+
+  void loadThresholds() {
+    db.collection('settings').doc('thresholds').snapshots().listen((snapshot) {
+      if (snapshot.exists && mounted) {
+        setState(() => thresholds = snapshot.data() ?? {});
+      }
+    });
+  }
+
+  void sendControl(String device, String command) {
+    // Write to 'commands' collection to trigger Cloud Function -> MQTT
+    db.collection('commands').add({
+      'device': device,
+      'command': command,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 
   void updateThreshold(String key, double value) {
-    thresholds[key] = value;
-    db.collection('settings').doc('thresholds').set(thresholds);
+    db.collection('settings').doc('thresholds').set({key: value}, SetOptions(merge: true));
   }
 
-  void sendControl(String device, String state) {
-    db.collection('status').doc(device).set({'state': state, 'timestamp': FieldValue.serverTimestamp()});
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Greenhouse", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green[700],
-        actions: [
-          IconButton(
-            icon: FaIcon(FontAwesomeIcons.cog),
-            onPressed: () => showThresholdDialog(context),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              height: 200,
-              child: VlcPlayer(controller: _videoController, aspectRatio: 16 / 9),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 250.0,
+            floating: false,
+            pinned: true,
+            backgroundColor: Color(0xFF121212),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text("Greenhouse Tender", 
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, shadows: [Shadow(color: Colors.black, blurRadius: 10)])
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  VlcPlayer(
+                    controller: _videoController,
+                    aspectRatio: 16 / 9,
+                    placeholder: Center(child: CircularProgressIndicator(color: Colors.greenAccent)),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Color(0xFF121212)],
+                        stops: [0.7, 1.0],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Padding(
+            actions: [
+              IconButton(
+                icon: FaIcon(FontAwesomeIcons.slidersH),
+                onPressed: () => showThresholdDialog(context),
+              ),
+            ],
+          ),
+          
+          SliverToBoxAdapter(
+            child: Padding(
               padding: EdgeInsets.all(16),
-              child: StreamBuilder<QuerySnapshot>(
-                stream: db.collection('sensor_data').orderBy('timestamp', descending: true).limit(50).snapshots(),
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: db.collection('status').doc('latest').snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) return CircularProgressIndicator();
-                  final data = snapshot.data!.docs;
+                  if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+                  if (!snapshot.data!.exists) return Center(child: Text("No Data Available"));
+
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+
                   return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SensorCard(
-                        title: "Temperature",
-                        icon: FontAwesomeIcons.thermometerHalf,
-                        value: data.first['ambient_temp']?.toString() ?? '--',
-                        unit: "°C",
-                        graph: LineChart(LineChartData(
-                          titlesData: FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: data.reversed.map((d) => FlSpot(data.indexOf(d).toDouble(), d['ambient_temp'] ?? 0)).toList(),
-                              color: Colors.red,
-                            ),
-                          ],
-                        )),
+                      Text("Environment", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white70)),
+                      SizedBox(height: 16),
+                      GridView.count(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        childAspectRatio: 1.1,
+                        children: [
+                          SensorCard(
+                            title: "Temperature",
+                            icon: FontAwesomeIcons.temperatureHigh,
+                            value: (data['ambient_temp'] ?? 0).toStringAsFixed(1),
+                            unit: "°C",
+                            color: Colors.orangeAccent,
+                            thresholdHigh: thresholds['ambient_temp_high'],
+                            thresholdLow: thresholds['ambient_temp_low'],
+                          ),
+                          SensorCard(
+                            title: "Humidity",
+                            icon: FontAwesomeIcons.tint,
+                            value: (data['ambient_humidity'] ?? 0).toStringAsFixed(1),
+                            unit: "%",
+                            color: Colors.blueAccent,
+                            thresholdHigh: thresholds['ambient_humidity_high'],
+                            thresholdLow: thresholds['ambient_humidity_low'],
+                          ),
+                          SensorCard(
+                            title: "Soil Moisture",
+                            icon: FontAwesomeIcons.seedling,
+                            value: (data['soil_moisture'] ?? 0).toStringAsFixed(0),
+                            unit: "%",
+                            color: Colors.greenAccent,
+                            thresholdHigh: thresholds['soil_moisture_high'],
+                            thresholdLow: thresholds['soil_moisture_low'],
+                          ),
+                          SensorCard(
+                            title: "Soil pH",
+                            icon: FontAwesomeIcons.flask,
+                            value: (data['soil_ph'] ?? 0).toStringAsFixed(1),
+                            unit: "pH",
+                            color: Colors.purpleAccent,
+                            thresholdHigh: thresholds['soil_ph_high'],
+                            thresholdLow: thresholds['soil_ph_low'],
+                          ),
+                        ],
                       ),
-                      SensorCard(
-                        title: "Humidity",
-                        icon: FontAwesomeIcons.tint,
-                        value: data.first['ambient_humidity']?.toString() ?? '--',
-                        unit: "%",
-                        graph: LineChart(LineChartData(
-                          titlesData: FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: data.reversed.map((d) => FlSpot(data.indexOf(d).toDouble(), d['ambient_humidity'] ?? 0)).toList(),
-                              color: Colors.blue,
-                            ),
-                          ],
-                        )),
+                      SizedBox(height: 24),
+                      Text("Controls", style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.white70)),
+                      SizedBox(height: 16),
+                      ControlRow(
+                        data: data,
+                        sendControl: sendControl,
                       ),
-                      // Add more SensorCards for soil_moisture, ph, thermo_temp
-                      ControlRow(sendControl: sendControl),
+                      SizedBox(height: 80), // Bottom padding
                     ],
                   );
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -143,18 +237,41 @@ class _DashboardState extends State<Dashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Set Thresholds"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ThresholdField(label: "Temp High", key: "ambient_temp_high", initial: thresholds['ambient_temp_high']),
-            ThresholdField(label: "Temp Low", key: "ambient_temp_low", initial: thresholds['ambient_temp_low']),
-            // Add more fields
-          ],
+        backgroundColor: Color(0xFF2C2C2C),
+        title: Text("Alert Thresholds", style: TextStyle(color: Colors.white)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ThresholdField(
+                label: "Max Temp (°C)", 
+                keyName: "ambient_temp_high", 
+                initial: thresholds['ambient_temp_high'],
+                onChanged: updateThreshold,
+              ),
+              ThresholdField(
+                label: "Min Temp (°C)", 
+                keyName: "ambient_temp_low", 
+                initial: thresholds['ambient_temp_low'],
+                onChanged: updateThreshold,
+              ),
+              ThresholdField(
+                label: "Min Humidity (%)", 
+                keyName: "ambient_humidity_low", 
+                initial: thresholds['ambient_humidity_low'],
+                onChanged: updateThreshold,
+              ),
+              ThresholdField(
+                label: "Min Soil Moisture (%)", 
+                keyName: "soil_moisture_low", 
+                initial: thresholds['soil_moisture_low'],
+                onChanged: updateThreshold,
+              ),
+            ],
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Cancel")),
-          TextButton(onPressed: () => Navigator.pop(context), child: Text("Save")),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text("Close")),
         ],
       ),
     );

@@ -1,79 +1,154 @@
-# Greenhouse Monitoring
+# 🌿 Greenhouse Tender
 
-A cloud-based system to monitor and control a greenhouse environment using an ESP32 microcontroller, ESP32-CAM for video, Firebase for data storage and notifications, and a Flutter mobile app for a modern user interface.
+[![Flutter](https://img.shields.io/badge/Flutter-3.10%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+[![Firebase](https://img.shields.io/badge/Firebase-Cloud%20Functions-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
+[![ESP32](https://img.shields.io/badge/Hardware-ESP32-E7352C?style=for-the-badge&logo=espressif&logoColor=white)](https://www.espressif.com/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Production--Ready-success?style=for-the-badge)]()
 
-## Overview
+> **A professional, cloud-connected ecosystem for precision greenhouse management.**
 
-This project creates a comprehensive greenhouse monitoring solution that tracks key environmental parameters and allows remote control via a mobile app. It features real-time sensor data (temperature, humidity, soil moisture, pH), relay-controlled devices (fan, vent, heater), and live video streaming, all presented in an aesthetic UI with graphs and customizable notifications.
+**Greenhouse Tender** is a robust IoT solution designed to monitor and control your greenhouse environment in real-time. By bridging low-level hardware sensors with a high-performance Flutter mobile application via Firebase, it provides a seamless, "mission-control" experience for the modern gardener.
 
-### Features
-- **Sensors:** Ambient temperature/humidity (DHT22), soil moisture (capacitive sensor), soil pH (SEN0161), thermostat temperature (DS18B20).
-- **Controls:** Fan, vent, and heater via relays.
-- **Video:** Live feed from ESP32-CAM.
-- **Mobile App:** Flutter-based UI with real-time data, time-series graphs, modern icons/fonts (Poppins, FontAwesome), and user-defined high/low threshold notifications.
-- **Cloud:** HiveMQ MQTT for data transmission, Firebase Firestore for storage, and Firebase Cloud Messaging for alerts.
+---
 
-### Architecture
-- **ESP32:** Collects sensor data, controls relays, and publishes to MQTT.
-- **ESP32-CAM:** Streams video over HTTP.
-- **Cloud:** HiveMQ MQTT broker relays data; Firebase Cloud Functions sync MQTT to Firestore and trigger notifications.
-- **Flutter App:** Pulls data from Firestore, displays graphs, and sends control commands.
+## 🚀 Key Features
 
-## Project Structure
+### 📱 **Modern Mobile Dashboard**
+- **Dark Mode UI**: A sleek, battery-friendly interface designed for high contrast and readability.
+- **Real-Time Data**: Instant updates for **Temperature**, **Humidity**, **Soil Moisture**, and **pH** levels using Firestore real-time listeners.
+- **Visual Health Indicators**: Cards change color (Green/Red) dynamically based on user-defined safety thresholds.
 
+### 🎮 **Interactive Control Center**
+- **Bi-Directional Control**: Toggle **Fans**, **Vents**, and **Heaters** directly from the app.
+- **State Feedback**: Buttons glow green only when the device confirms it is active, ensuring true state synchronization.
+- **Live Video Feed**: Integrated low-latency video streaming from an ESP32-CAM to keep an eye on your plants from anywhere.
+
+### ⚡ **Robust Backend Architecture**
+- **Data Aggregation**: Cloud Functions merge incoming MQTT sensor streams into a single "latest status" document to prevent UI flickering.
+- **Smart Alerts**: Automated Firebase Cloud Messaging (FCM) push notifications when environmental conditions drift out of safe ranges.
+- **History Logging**: Separate scalable storage for historical sensor data to support future analytics.
+
+---
+
+## 🏗️ System Architecture
+
+The system follows a reactive, event-driven architecture:
+
+```mermaid
+graph LR
+    subgraph Greenhouse
+        ESP32[ESP32 Controller] -- MQTT --> Broker[HiveMQ Broker]
+        Cam[ESP32-CAM] -- HTTP Stream --> App
+    end
+
+    subgraph Cloud
+        Broker -- Webhook --> Func[Cloud Functions]
+        Func -- Write --> Firestore[(Firestore DB)]
+        Firestore -- Listen --> App[Flutter App]
+        App -- Write Command --> Firestore
+        Firestore -- Trigger --> Func
+        Func -- Publish Command --> Broker
+        Broker -- Subscribe --> ESP32
+    end
 ```
+
+---
+
+## 🛠️ Technology Stack
+
+### **Hardware**
+*   **Microcontroller**: ESP32 DevKit V1
+*   **Video**: ESP32-CAM (AI-Thinker)
+*   **Sensors**: DHT22 (Temp/Hum), Capacitive Soil Moisture, Analog pH Sensor (SEN0161), DS18B20 (Probe)
+*   **Actuators**: 4-Channel 5V Relay Module
+
+### **Firmware**
+*   **Language**: C++
+*   **Framework**: Arduino / PlatformIO
+*   **Libraries**: `PubSubClient` (MQTT), `Adafruit_SSD1306` (OLED), `DHT`
+
+### **Backend**
+*   **Runtime**: Node.js (Firebase Cloud Functions)
+*   **Database**: Google Cloud Firestore (NoSQL)
+*   **Messaging**: HiveMQ (MQTT Broker) + Firebase Cloud Messaging (FCM)
+
+### **Mobile App**
+*   **Framework**: Flutter (Dart)
+*   **Dependencies**: `cloud_firestore`, `flutter_vlc_player`, `fl_chart`, `google_fonts`, `font_awesome_flutter`
+
+---
+
+## 📂 Project Structure
+
+```bash
 greenhouse-monitoring/
-├── esp32-firmware/         # ESP32 sensor and control firmware (C++, PlatformIO)
-├── esp32-cam-firmware/     # ESP32-CAM video streaming firmware (C++, PlatformIO)
-├── cloud-functions/        # Firebase Cloud Functions (Node.js)
-├── flutter-app/            # Flutter mobile app (Dart)
-├── docs/                   # Documentation (wiring, architecture)
-├── .gitignore              # Git ignore rules
-├── README.md               # This file
-└── LICENSE                 # MIT License
+├── esp32-firmware/         # C++ firmware for sensor reading & relay control
+├── esp32-cam-firmware/     # C++ firmware for video streaming server
+├── cloud-functions/        # Node.js backend logic (triggers, aggregation)
+├── flutter-app/            # Production-ready mobile application
+│   ├── lib/
+│   │   ├── widgets/        # Reusable UI components (SensorCard, ControlRow)
+│   │   └── main.dart       # Main entry point & dashboard logic
+├── docs/                   # Wiring diagrams and datasheets
+└── README.md               # Project documentation
 ```
 
-## Prerequisites
+---
 
-- **Hardware:** ESP32 DevKit, ESP32-CAM (e.g., AI-Thinker), DHT22, capacitive soil moisture sensor, pH sensor (SEN0161), DS18B20, relays, Wi-Fi.
-- **Software:** VS Code with PlatformIO extension (for ESP32 firmware), Node.js (for Firebase), Flutter SDK, Git.
-- **Services:** HiveMQ Cloud account, Firebase project.
+## ⚡ Getting Started
 
-## Setup Instructions
+### 1. Firmware Setup
+1.  Open `esp32-firmware` in **VS Code** with the **PlatformIO** extension.
+2.  Rename `include/config.example.h` to `include/config.h` and add your WiFi/MQTT credentials.
+3.  Build and Upload to your ESP32.
+4.  Repeat for `esp32-cam-firmware`.
 
-1. **Clone the Repo:**
-   ```bash
-   git clone https://github.com/secretengineer/Greenhouse-Tender-2.git
-   cd greenhouse-monitoring
-   ```
-2. **ESP32 Firmware:**
-   - Open `esp32-firmware/` in VS Code with PlatformIO.
-   - Configure `include/config.h` with WiFi and MQTT credentials.
-   - See `esp32-firmware/README.md` for wiring and upload instructions.
-3. **ESP32-CAM Firmware:**
-   - Open `esp32-cam-firmware/` in VS Code with PlatformIO.
-   - Configure `include/config.h` with WiFi credentials.
-   - See `esp32-cam-firmware/README.md` for wiring and upload instructions.
-4. **Cloud Functions:** See `cloud-functions/README.md` for Firebase deployment.
-5. **Flutter App:** See `flutter-app/README.md` for app setup and run commands.
-6. **Documentation:** Check `docs/` for wiring diagrams and architecture details.
+### 2. Backend Deployment
+1.  Navigate to `cloud-functions`:
+    ```bash
+    cd cloud-functions
+    npm install
+    ```
+2.  Deploy to Firebase:
+    ```bash
+    firebase deploy --only functions
+    ```
 
-## Status
+### 3. Mobile App
+1.  Navigate to `flutter-app`:
+    ```bash
+    cd flutter-app
+    flutter pub get
+    ```
+2.  Update the camera IP in `lib/main.dart` (line 60).
+3.  Run the app:
+    ```bash
+    flutter run
+    ```
 
-- **Current Stage:** Planning and initial code snippets completed (as of February 20, 2025).
-- **Next Steps:** Implement and test ESP32 firmware, deploy Firebase functions, build Flutter UI.
+---
 
-## Contributing
+## 🤝 Contributing
 
-Feel free to fork, submit issues, or open pull requests. See individual component READMEs for specific contribution guidelines.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-## License
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+---
 
-## Contact
+## 📄 License
 
-Created by Pat Ryan - reach out via GitHub Issues for questions or feedback.
-```
+Distributed under the MIT License. See `LICENSE` for more information.
 
+---
 
+## 📞 Contact
+
+**Pat Ryan** - [GitHub Profile](https://github.com/secretengineer)
+
+Project Link: [https://github.com/secretengineer/Greenhouse-Tender-2](https://github.com/secretengineer/Greenhouse-Tender-2)

@@ -3,8 +3,9 @@
  * 
  * This module handles:
  * - MQTT message processing from ESP32 sensors
- * - Data storage in Firestore
+ * - Data storage in Firestore (Real-time & History)
  * - Automated alerts based on sensor thresholds
+ * - Bi-directional control (App -> Firestore -> MQTT -> ESP32)
  */
 
 const functions = require('firebase-functions');
@@ -15,15 +16,18 @@ const mqtt = require('mqtt');
 admin.initializeApp();
 const db = admin.firestore();
 
-// Example configuration using environment variables
-const client = mqtt.connect(functions.config().mqtt.url, {
-  username: functions.config().mqtt.username,
-  password: functions.config().mqtt.password,
+// MQTT Configuration
+const MQTT_URL = functions.config().mqtt.url || 'mqtt://broker.hivemq.com'; // Fallback for dev
+const MQTT_USER = functions.config().mqtt.username;
+const MQTT_PASS = functions.config().mqtt.password;
+
+const client = mqtt.connect(MQTT_URL, {
+  username: MQTT_USER,
+  password: MQTT_PASS,
 });
 
 /**
  * MQTT Connection Handler
- * Subscribes to all greenhouse-related topics when connected
  */
 client.on('connect', () => {
   client.subscribe('greenhouse/#');
@@ -32,71 +36,91 @@ client.on('connect', () => {
 
 /**
  * MQTT Message Handler
- * Processes incoming messages and stores data in Firestore
- * 
- * Topic structure:
- * - greenhouse/ambient/* : Environmental readings (temp, humidity)
- * - greenhouse/soil/*    : Soil-related readings (moisture, pH)
- * - greenhouse/thermo/*  : Additional temperature readings
- * - greenhouse/status/*  : Device status updates
- * 
- * @param {string} topic - MQTT topic path
- * @param {Buffer} message - Message payload
+ * Processes incoming messages:
+ * 1. Updates 'status/latest' for real-time UI.
+ * 2. Logs to 'sensor_history' for graphs.
+ * 3. Updates device status.
  */
-client.on('message', (topic, message) => {
+client.on('message', async (topic, message) => {
   const value = message.toString();
   const timestamp = admin.firestore.FieldValue.serverTimestamp();
-  // Convert MQTT topic path to Firestore key (e.g., 'ambient/temp' → 'ambient_temp')
+
+  // Topic: greenhouse/ambient/temp -> key: ambient_temp
   const key = topic.split('/').slice(1).join('_');
-  
-  // Handle sensor data
-  if (topic.startsWith('greenhouse/ambient') || 
-      topic.startsWith('greenhouse/soil') || 
-      topic.startsWith('greenhouse/thermo')) {
-    // Store sensor reading in Firestore
-    db.collection('sensor_data').add({ 
-      [key]: parseFloat(value), 
-      timestamp 
+
+  // 1. Handle Sensor Data (ambient, soil, thermo)
+  if (topic.startsWith('greenhouse/ambient') ||
+    topic.startsWith('greenhouse/soil') ||
+    topic.startsWith('greenhouse/thermo')) {
+
+    const numValue = parseFloat(value);
+
+    // A. Update Real-time Status (Merge into one doc)
+    await db.collection('status').doc('latest').set({
+      [key]: numValue,
+      last_updated: timestamp
+    }, { merge: true });
+
+    // B. Log History (New doc)
+    await db.collection('sensor_history').add({
+      type: key,
+      value: numValue,
+      timestamp: timestamp
     });
-    // Check if reading exceeds configured thresholds
+
+    // C. Check Thresholds
     checkThresholds(key, value);
-  } 
-  // Handle device status updates
+  }
+  // 2. Handle Device Status Updates (feedback from ESP32)
   else if (topic.startsWith('greenhouse/status')) {
-    db.collection('status')
-      .doc(key.split('_')[1])
-      .set({ 
-        state: value, 
-        timestamp 
-      });
+    const device = key.split('_')[2]; // greenhouse_status_fan -> fan
+    await db.collection('status').doc('latest').set({
+      [`${device}_state`]: value, // e.g., fan_state: "ON"
+      last_updated: timestamp
+    }, { merge: true });
   }
 });
 
 /**
+ * Firestore Trigger: Send Control Commands
+ * Listens for new documents in 'commands' collection and publishes to MQTT.
+ * App creates doc: commands/{auto-id} { device: 'fan', command: 'ON' }
+ */
+exports.sendControl = functions.firestore
+  .document('commands/{cmdId}')
+  .onCreate((snap, context) => {
+    const data = snap.data();
+    const device = data.device;   // 'fan', 'vent', 'heater'
+    const command = data.command; // 'ON', 'OFF'
+
+    if (device && command) {
+      const topic = `greenhouse/control/${device}`;
+      client.publish(topic, command);
+      console.log(`Published ${command} to ${topic}`);
+    }
+    return snap.ref.delete(); // Cleanup command doc
+  });
+
+/**
  * Threshold Checker
- * Monitors sensor readings against configured thresholds and sends alerts
- * 
- * @param {string} key - Sensor identifier (e.g., 'ambient_temp')
- * @param {string} value - Sensor reading
  */
 async function checkThresholds(key, value) {
-  // Retrieve threshold settings from Firestore
-  const settings = (await db.collection('settings').doc('thresholds').get()).data();
+  const settingsDoc = await db.collection('settings').doc('thresholds').get();
+  if (!settingsDoc.exists) return;
+
+  const settings = settingsDoc.data();
   const numValue = parseFloat(value);
   let title, body;
 
-  // Check for high threshold violation
   if (settings[`${key}_high`] && numValue > settings[`${key}_high`]) {
-    title = `High ${key.split('_').join(' ')} Alert`;
-    body = `${key.split('_').join(' ')} is ${value}, above ${settings[`${key}_high`]}`;
-  } 
-  // Check for low threshold violation
+    title = `High Alert: ${key}`;
+    body = `${key} is ${value}, above ${settings[`${key}_high`]}`;
+  }
   else if (settings[`${key}_low`] && numValue < settings[`${key}_low`]) {
-    title = `Low ${key.split('_').join(' ')} Alert`;
-    body = `${key.split('_').join(' ')} is ${value}, below ${settings[`${key}_low`]}`;
+    title = `Low Alert: ${key}`;
+    body = `${key} is ${value}, below ${settings[`${key}_low`]}`;
   }
 
-  // Send notification if threshold was violated
   if (title) {
     admin.messaging().send({
       notification: { title, body },
@@ -105,8 +129,4 @@ async function checkThresholds(key, value) {
   }
 }
 
-/**
- * HTTP Endpoint
- * Simple health check endpoint to verify function is running
- */
 exports.mqttSync = functions.https.onRequest((req, res) => res.send('MQTT Sync Running'));
