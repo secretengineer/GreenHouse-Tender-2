@@ -17,6 +17,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 // MQTT Configuration
+// WARNING: 'mqtt://' is insecure. Use 'mqtts://' and proper certificates for production.
 const MQTT_URL = functions.config().mqtt.url || 'mqtt://broker.hivemq.com'; // Fallback for dev
 const MQTT_USER = functions.config().mqtt.username;
 const MQTT_PASS = functions.config().mqtt.password;

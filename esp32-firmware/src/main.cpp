@@ -13,6 +13,7 @@
 // Required libraries
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h> // Required for SSL/TLS MQTT connection
 #include <PubSubClient.h>    // MQTT client
 #include <Adafruit_Sensor.h> // Required by DHT library
 #include <DHT.h>             // DHT sensor
@@ -59,7 +60,7 @@ void reconnect();
 #define PH_MAX 14.0         // Maximum valid pH
 
 // Initialize communication clients and sensors
-WiFiClient espClient;
+WiFiClientSecure espClient; // Use Secure Client for HiveMQ Cloud
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
 OneWire oneWire(TEMP_PIN);
@@ -134,6 +135,10 @@ void setup() {
         Serial.println("\nWiFi connected");
         Serial.print("IP Address: ");
         Serial.println(WiFi.localIP());
+        
+        // Configure Secure Client
+        espClient.setInsecure(); // Skip certificate validation (Not recommended for production)
+        // TODO: For production, use espClient.setCACert(root_ca) with the HiveMQ root certificate
     } else {
         Serial.println("\nWiFi connection failed! Restarting...");
         ESP.restart();
@@ -184,15 +189,16 @@ void reconnect() {
  * @param length - Message length
  */
 void callback(char* topic, byte* payload, unsigned int length) {
-    // Create a null-terminated string from the payload
-    char message[length + 1];
-    memcpy(message, payload, length);
-    message[length] = '\0';
+    // Create a string from the payload safely
+    String message = "";
+    for (unsigned int i = 0; i < length; i++) {
+        message += (char)payload[i];
+    }
     
     // Determine if the command is to turn ON (supports "ON", "1", "true")
-    bool turnOn = (strcmp(message, "ON") == 0) || 
-                  (strcmp(message, "1") == 0) || 
-                  (strcmp(message, "true") == 0);
+    bool turnOn = (message == "ON") || 
+                  (message == "1") || 
+                  (message == "true");
 
     // Handle incoming messages and control devices
     if (strcmp(topic, "greenhouse/control/fan") == 0) {

@@ -100,7 +100,8 @@ greenhouse-monitoring/
 
 ### 1. Firmware Setup
 1.  Open `esp32-firmware` in **VS Code** with the **PlatformIO** extension.
-2.  Rename `include/config.example.h` to `include/config.h` and add your WiFi/MQTT credentials.
+2.  Rename `include/config.h.template` to `include/config.h` and add your WiFi/MQTT credentials.
+    *   **Note**: The firmware is configured for **Secure MQTT (SSL/TLS)** on port 8883. Ensure your broker supports this (e.g., HiveMQ Cloud).
 3.  Build and Upload to your ESP32.
 4.  Repeat for `esp32-cam-firmware`.
 
